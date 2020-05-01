@@ -1,3 +1,4 @@
+#%%
 def downloader(**params) :
     
     """ 
@@ -28,6 +29,7 @@ def downloader(**params) :
     p_dict, options = check_params(params)
     columns = make_labels(p_dict['elems'])
     raw = make_request(p_dict)
+    raw = eval(raw) 
     
     if 'error' in raw : raise TypeError(raw['error'])
 
@@ -56,11 +58,19 @@ def downloader(**params) :
                     elif e.endswith('A') : stn_data[columns[i]].append(cvt_accum(e))
                     else : stn_data[columns[i]].append(e)
         df = pd.DataFrame(stn_data, index=dates)
+        print(df)
         all_data[sid] = df
-    panel = pd.from_dict(all_data)
+    print(all_data)
+    panel = pd.DataFrame.from_dict(all_data)
     return panel
 
 if __name__ == "__main__":
     p = downloader(climdiv="DE01",date="2011-8",elems="mly_mean_avgt,mly_sum_pcpn")
     print(p)
+
+
+
+
+# %%
+
 
