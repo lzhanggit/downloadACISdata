@@ -29,11 +29,13 @@ def downloader(**params) :
 	"""
     import numpy as np
     import pandas as pd
+    from datetime import datetime
         
     elem_name = params['elems'].split(',')[:]
     raw = make_request(params)
     raw = eval(raw)
     data = raw['data']
+    parameters = [k for k in params.keys()]
     len_data = len(data)
     output_data=[]
     uid_list = []
@@ -41,8 +43,7 @@ def downloader(**params) :
     sids_list = []
     state_list = []
     elev_list = []
-    name_list = []
-
+    name_list = []  
     for i in range(len_data):
         stn = data[i]
         data_meta = stn['meta']
@@ -83,9 +84,30 @@ def downloader(**params) :
         'elevation': elev_list, 'name':name_list}
     df = pd.DataFrame(data=d)
     output_data=np.asarray(output_data)
-    output_data[output_data=='M']=np.nan
-    output_data=output_data.astype(float)
-    for j in range(len(elem_name)):
-        data_arranged = output_data[:,j]
-        df[str(elem_name[j])]=data_arranged
+    output_data[output_data=='M']= np.nan
+    #output_data=output_data.astype(float)
+    if 'date' in parameters:
+        for j in range(len(elem_name)):
+            data_arranged = output_data[:,j]
+            thedate = params['date']
+            date = datetime.strptime(thedate, '%Y-%m-%d').strftime('%Y-%m-%d')
+            df['date'] = date
+            df[str(elem_name[j])]=data_arranged
+    elif 'sdate' and 'edate' in parameters:
+        start = params['sdate']
+        end = params['edate']
+        sdate = datetime.strptime(start, '%Y-%m-%d').strftime('%Y-%m-%d')
+        edate = datetime.strptime(end, '%Y-%m-%d').strftime('%Y-%m-%d')
+        time_index = pd.date_range(start=sdate,end=edate,freq='D').values
+        time_index = np.repeat(time_index, np.shape(output_data)[0])
+        df = df.iloc[np.repeat(np.arange(len(df)), np.shape(output_data)[1])]
+        df['date'] = time_index
+        for i in range(len(elem_name)):
+            data_arranged=[]
+            for j in range(len_data):
+                stn_period_data = output_data[j,:,i]
+                data_arranged.append(stn_period_data)
+            data_arranged = np.asarray(data_arranged)
+            data_arranged = data_arranged.flatten()
+            df[str(elem_name[i])]=data_arranged
     return df
