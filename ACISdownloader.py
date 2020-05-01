@@ -1,76 +1,91 @@
-#%%
+def make_request(params):
+        
+    """ 
+	This function was coded by Beichen Zhang for class project
+    It is used to send a request to ACIS website and download climate 
+    dataset.
+
+    Details of the format and variables in the request can be found at
+    the website: https://www.rcc-acis.org/docs_webservices.html
+
+	April 30, 2020
+    """
+    import requests
+    import json
+    url = 'http://data.rcc-acis.org/MultiStnData'
+    req = requests.post(url,json=params)
+    if req.status_code == 400 and req.reason == 'Bad Request':
+        raise ValueError('Invalid parameters')
+    else:
+        return req.text
+
 def downloader(**params) :
     
     """ 
-		This function was originall written by Bill Noon and shared on github:
-		https://github.com/bnoon/acis-pandas
 
-		This function was editted and modified by Beichen Zhang for class project
+		This function was coded and modified by Beichen Zhang for class project
 
-		April 29, 2020
+		April 30, 2020
 	"""
     import numpy as np
     import pandas as pd
-    from check_params import check_params
-    from make_request import make_request
-    from make_labels import make_labels
         
-    # validate params
-    # validate elems
-    # calculate timeseries
-    cvt_missing = params.pop('missing','M')
-    cvt_trace = params.pop('trace','T')
-    cvt_subseq = params.pop('subseq','S')
-    if 'accum' in params :
-        if params['accum'] == True : 
-            cvt_accum = lambda a : float(a[:-1])
-        else : 
-            cvt_accum = lambda a : params['accum']
-    p_dict, options = check_params(params)
-    columns = make_labels(p_dict['elems'])
-    raw = make_request(p_dict)
-    raw = eval(raw) 
-    
-    if 'error' in raw : raise TypeError(raw['error'])
+    elem_name = params['elems'].split(',')[:]
+    raw = make_request(params)
+    raw = eval(raw)
+    data = raw['data']
+    len_data = len(data)
+    output_data=[]
+    uid_list = []
+    ll_list = []
+    sids_list = []
+    state_list = []
+    elev_list = []
+    name_list = []
 
-    sdate = p_dict.get('sdate',p_dict['date'])
-    if isinstance(sdate,(list,tuple)) : sdate = '-'.join(map(str,sdate))
-    raw, datum_slice = raw['data'], slice(0,None)
-    all_data = {}
-    dates = None
-    one_date = 'one_date' in options
-    for stn_raw in raw :
-        stn_data = dict([(key,[]) for key in columns])
-        meta = stn_raw['meta']
-        sid = meta['sids'][0].split(' ')[0]
-        if one_date : raw_data = [stn_raw['data']]
-        else : raw_data = stn_raw['data']
-        if dates is None :
-            dates = pd.date_range(sdate,periods=len(raw_data),freq=options['date_freq'])
-        for datum in raw_data :
-            for i,e in enumerate(datum[datum_slice]) :
-                try :
-                    stn_data[columns[i]].append(float(e))
-                except ValueError :
-                    if e == 'M' : stn_data[columns[i]].append(cvt_missing)
-                    elif e == 'T' : stn_data[columns[i]].append(cvt_trace)
-                    elif e == 'S' : stn_data[columns[i]].append(cvt_subseq)
-                    elif e.endswith('A') : stn_data[columns[i]].append(cvt_accum(e))
-                    else : stn_data[columns[i]].append(e)
-        df = pd.DataFrame(stn_data, index=dates)
-        print(df)
-        all_data[sid] = df
-    print(all_data)
-    panel = pd.DataFrame.from_dict(all_data)
-    return panel
-
-if __name__ == "__main__":
-    p = downloader(climdiv="DE01",date="2011-8",elems="mly_mean_avgt,mly_sum_pcpn")
-    print(p)
-
-
-
-
-# %%
-
-
+    for i in range(len_data):
+        stn = data[i]
+        data_meta = stn['meta']
+        keys = [k for k in data_meta.keys()]
+        if 'uid' in keys:
+            data_uid = data_meta['uid']
+            uid_list.append(data_uid)
+        else:
+            uid_list.append(np.nan)
+        if 'll' in keys:
+            data_ll = str(data_meta['ll'])
+            ll_list.append(data_ll)
+        else:
+            ll_list.append(np.nan)
+        if 'sids' in keys:
+            data_sids = str(data_meta['sids'])
+            sids_list.append(data_sids)
+        else:
+            sids_list.append(np.nan)
+        if 'state' in keys:
+            data_state = data_meta['state']
+            state_list.append(data_state)
+        else:
+            state_list.append(np.nan)
+        if 'elev' in keys:
+            data_elev = data_meta['elev']
+            elev_list.append(data_elev)
+        else:
+            elev_list.append(np.nan)
+        if 'name' in keys:
+            data_name = data_meta['name']
+            name_list.append(data_name)
+        else:
+            name_list.append(np.nan)
+        data_stn = stn['data']
+        output_data.append(data_stn)
+    d = {'uid':uid_list,'lat and long':ll_list,'sids':sids_list,'state':state_list,\
+        'elevation': elev_list, 'name':name_list}
+    df = pd.DataFrame(data=d)
+    output_data=np.asarray(output_data)
+    output_data[output_data=='M']=np.nan
+    output_data=output_data.astype(float)
+    for j in range(len(elem_name)):
+        data_arranged = output_data[:,j]
+        df[str(elem_name[j])]=data_arranged
+    return df
