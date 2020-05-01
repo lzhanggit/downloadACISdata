@@ -13,7 +13,28 @@ def make_request(params):
     import requests
     import json
     url = 'http://data.rcc-acis.org/MultiStnData'
-    req = requests.post(url,json=params)
+    req = requests.post(url,sdate,edate,json=params)
+    if req.status_code == 400 and req.reason == 'Bad Request':
+        raise ValueError('Invalid parameters')
+    else:
+        return req.text
+
+def make_request(params):
+        
+    """ 
+	This function was coded by Beichen Zhang for class project
+    It is used to send a request to ACIS website and download climate 
+    dataset.
+
+    Details of the format and variables in the request can be found at
+    the website: https://www.rcc-acis.org/docs_webservices.html
+
+	April 30, 2020
+    """
+    import requests
+    import json
+    url = 'http://data.rcc-acis.org/MultiStnData'
+    req = requests.post(url,sdate,edate,json=params)
     if req.status_code == 400 and req.reason == 'Bad Request':
         raise ValueError('Invalid parameters')
     else:
@@ -43,7 +64,13 @@ def downloader(**params) :
     sids_list = []
     state_list = []
     elev_list = []
+<<<<<<< HEAD
     name_list = []  
+=======
+    name_list = []
+    sdate = []
+    edate = []
+>>>>>>> 0ef7947ab49e8b083a9ff59385512dd6bc085e26
     for i in range(len_data):
         stn = data[i]
         data_meta = stn['meta']
@@ -78,9 +105,20 @@ def downloader(**params) :
             name_list.append(data_name)
         else:
             name_list.append(np.nan)
+        if 'sdate' in keys:
+            sdate = data_meta['sdate']
+            sdate.append(sdate)
+        else:
+            edate.append(np.nan)
+        if 'edate' in keys:
+            edate = data_meta['edate']
+            edate.append(edate)
+        else:
+            edate.append(np.nan)
+            
         data_stn = stn['data']
         output_data.append(data_stn)
-    d = {'uid':uid_list,'lat and long':ll_list,'sids':sids_list,'state':state_list,\
+    d = {'sdate':sdate,'edate':edate,'uid':uid_list,'lat and long':ll_list,'sids':sids_list,'state':state_list,\
         'elevation': elev_list, 'name':name_list}
     df = pd.DataFrame(data=d)
     output_data=np.asarray(output_data)
