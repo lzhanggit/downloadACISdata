@@ -1,4 +1,8 @@
-#%%
+""" 
+		This function was coded and modified by Ligang Zhang for class project
+
+		May 1, 2020
+"""
 import pandas as pd
 import numpy as np
 from ACISdownloader import downloader 
@@ -29,7 +33,7 @@ df5D.to_csv('Q2_test_temperature_5day_mean_KCAR_station.csv',index=True,header=T
 #Question 3
 p3 = downloader(county="31109",sdate='2019-1-1',edate='2019-12-31',elems="avgt")
 p3.head()
-df3 = pd.DataFrame(p2,columns=['date','uid','avgt'])
+df3 = pd.DataFrame(p3,columns=['date','uid','avgt'])
 print(df3)
 df3.dtypes
 df3["avgt"] = df3.avgt.astype(float)
